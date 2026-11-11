@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Fraud Cases')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Fraud Dispute Cases</h2>
+        <div>
+            <span class="badge text-bg-secondary me-2">processor: <span th:text="${mode}">RULES</span></span>
+            <a class="btn btn-primary" th:href="@{/cases/new}">New Dispute</a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="card text-center"><div class="card-body">
+            <div class="fs-3" th:text="${intake}">0</div><div class="text-muted">Intake</div></div></div></div>
+        <div class="col-md-3"><div class="card text-center"><div class="card-body">
+            <div class="fs-3" th:text="${awaiting}">0</div><div class="text-muted">Awaiting review</div></div></div></div>
+        <div class="col-md-3"><div class="card text-center"><div class="card-body">
+            <div class="fs-3" th:text="${evidenceReq}">0</div><div class="text-muted">Evidence requested</div></div></div></div>
+        <div class="col-md-3"><div class="card text-center"><div class="card-body">
+            <div class="fs-3" th:text="${closed}">0</div><div class="text-muted">Closed</div></div></div></div>
+    </div>
+
+    <div class="card">
+        <table class="table table-hover mb-0">
+            <thead><tr>
+                <th>Case</th><th>Customer</th><th>Merchant</th><th class="text-end">Amount</th>
+                <th>Dispute</th><th>Status</th><th>Created</th><th></th>
+            </tr></thead>
+            <tbody>
+            <tr th:each="c : ${cases}">
+                <td class="mono" th:text="${c.caseNumber}">FC-1001</td>
+                <td th:text="${c.customerId}">CUST-101</td>
+                <td th:text="${c.merchantName}">—</td>
+                <td class="text-end" th:text="${c.amount} + ' ' + ${c.currency}">0.00 USD</td>
+                <td th:text="${c.disputeType}">—</td>
+                <td><span class="badge"
+                          th:classappend="${c.status.name() == 'AWAITING_REVIEW'} ? 'text-bg-warning'
+                                        : (${c.status.name() == 'CLOSED'} ? 'text-bg-success'
+                                        : (${c.status.name() == 'EVIDENCE_REQUESTED'} ? 'text-bg-info' : 'text-bg-secondary'))"
+                          th:text="${c.status}">INTAKE</span></td>
+                <td th:text="${#temporals.format(c.createdAt, 'yyyy-MM-dd HH:mm')}">—</td>
+                <td><a class="btn btn-sm btn-outline-primary" th:href="@{/cases/{id}(id=${c.id})}">Open</a></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(cases)}"><td colspan="8" class="text-center text-muted py-4">
+                No cases yet — create the first dispute.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

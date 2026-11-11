@@ -1,0 +1,16 @@
+[
+  {
+    "caseRef": "FC-OLD-090",
+    "customerId": "CUST-101",
+    "type": "UNAUTHORIZED_TRANSACTION",
+    "outcome": "FRAUD_CONFIRMED",
+    "openedAt": "2026-07-14"
+  },
+  {
+    "caseRef": "FC-OLD-104",
+    "customerId": "CUST-104",
+    "type": "AMOUNT_MISMATCH",
+    "outcome": "LEGITIMATE",
+    "openedAt": "2026-03-02"
+  }
+]

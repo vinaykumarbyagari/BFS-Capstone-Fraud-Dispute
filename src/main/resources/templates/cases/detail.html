@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Case detail')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0"><span class="mono" th:text="${c.caseNumber}">FC-1001</span>
+            <span class="badge ms-2"
+                  th:classappend="${c.status.name() == 'AWAITING_REVIEW'} ? 'text-bg-warning'
+                               : (${c.status.name() == 'CLOSED'} ? 'text-bg-success'
+                               : (${c.status.name() == 'EVIDENCE_REQUESTED'} ? 'text-bg-info' : 'text-bg-secondary'))"
+                  th:text="${c.status}">INTAKE</span>
+        </h2>
+        <div>
+            <form th:action="@{/cases/{id}/investigate(id=${c.id})}" method="post" class="d-inline"
+                  th:if="${c.status.name() != 'CLOSED'}">
+                <button class="btn btn-primary" type="submit">Run investigation</button>
+            </form>
+            <a class="btn btn-warning" sec:authorize="hasRole('REVIEWER')"
+               th:href="@{/cases/{id}/review(id=${c.id})}">Review</a>
+        </div>
+    </div>
+
+    <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+
+    <div class="row g-4">
+        <!-- Left: case + recommendation -->
+        <div class="col-lg-5">
+            <div class="card mb-4">
+                <div class="card-header fw-bold">Disputed transaction</div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <tr><th>Customer</th><td th:text="${c.customerId}"></td></tr>
+                        <tr><th>Card</th><td>•••• <span th:text="${c.cardLast4}"></span></td></tr>
+                        <tr><th>Transaction</th><td class="mono" th:text="${c.transactionRef ?: '—'}"></td></tr>
+                        <tr><th>Merchant</th><td th:text="${c.merchantName ?: '—'}"></td></tr>
+                        <tr><th>Amount</th><td th:text="${c.amount} + ' ' + ${c.currency}"></td></tr>
+                        <tr><th>Channel</th><td th:text="${c.channel}"></td></tr>
+                        <tr><th>Dispute type</th><td th:text="${c.disputeType}"></td></tr>
+                        <tr><th>Statement</th><td th:text="${c.description ?: '—'}"></td></tr>
+                        <tr><th>Created by</th><td th:text="${c.createdBy}"></td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-4" th:if="${!#lists.isEmpty(recommendations)}">
+                <div class="card-header fw-bold">Latest recommendation
+                    <span class="badge text-bg-secondary ms-2"
+                          th:text="${recommendations[0].mode}">RULES</span>
+                </div>
+                <div class="card-body" th:with="r=${recommendations[0]}">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="fs-5 badge"
+                              th:classappend="${r.route.name() == 'ESCALATE_FRAUD_OPS'} ? 'text-bg-danger'
+                                           : (${r.route.name() == 'RECOMMEND_REFUND'} ? 'text-bg-warning'
+                                           : (${r.route.name() == 'RECOMMEND_DENIAL'} ? 'text-bg-info'
+                                           : (${r.route.name() == 'REQUEST_EVIDENCE'} ? 'text-bg-primary' : 'text-bg-secondary')))"
+                              th:text="${r.route}">—</span>
+                        <span class="badge text-bg-dark" th:text="${r.priority}">—</span>
+                        <span class="text-muted" th:text="'confidence ' + ${r.confidence}"></span>
+                        <span class="badge text-bg-danger" th:if="${r.abstained}">ABSTAINED</span>
+                    </div>
+                    <p th:text="${r.summary}"></p>
+                    <div class="alert alert-warning py-2" th:if="${r.abstained}"
+                         th:text="${'Abstention: ' + r.abstainReason}"></div>
+                    <h6>Reasons</h6>
+                    <pre class="json" th:text="${r.reasonsJson}"></pre>
+                    <h6>Policy citations</h6>
+                    <pre class="json" th:text="${r.citationsJson}"></pre>
+                    <div th:if="${r.evidenceRequestsJson != null and r.evidenceRequestsJson != '[]'}">
+                        <h6>Evidence requested</h6>
+                        <pre class="json" th:text="${r.evidenceRequestsJson}"></pre>
+                    </div>
+                    <small class="text-muted">model: <span th:text="${r.modelName}"></span>
+                        | schema valid: <span th:text="${r.schemaValid}"></span></small>
+                </div>
+            </div>
+
+            <div class="card" th:if="${!#lists.isEmpty(reviews)}">
+                <div class="card-header fw-bold">Human review</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item" th:each="rev : ${reviews}">
+                        <span class="badge text-bg-dark" th:text="${rev.disposition}"></span>
+                        by <b th:text="${rev.reviewerName}"></b>
+                        <div th:text="${rev.rationale}"></div>
+                        <small class="text-muted" th:text="${#temporals.format(rev.createdAt, 'yyyy-MM-dd HH:mm')}"></small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Right: evidence / trace / memory / audit tabs -->
+        <div class="col-lg-7">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab"
+                        data-bs-target="#tab-evidence">Evidence</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab"
+                        data-bs-target="#tab-trace">Execution trace</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab"
+                        data-bs-target="#tab-memory">Case memory</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab"
+                        data-bs-target="#tab-audit">Audit</button></li>
+            </ul>
+            <div class="tab-content border border-top-0 p-3">
+
+                <div class="tab-pane fade show active" id="tab-evidence">
+                    <p class="text-muted small" th:if="${#lists.isEmpty(evidence)}">
+                        No evidence collected yet — run an investigation.</p>
+                    <div class="card mb-2" th:each="e : ${evidence}">
+                        <div class="card-body py-2">
+                            <div class="d-flex justify-content-between">
+                                <b class="mono" th:text="${e.toolName}">tool</b>
+                                <span class="badge"
+                                      th:classappend="${e.outcome == 'SUCCESS'} ? 'text-bg-success'
+                                                    : (${e.outcome == 'NOT_FOUND'} ? 'text-bg-warning' : 'text-bg-danger')"
+                                      th:text="${e.outcome}"></span>
+                            </div>
+                            <div class="mono text-muted" th:text="${'args ' + e.argumentsJson}"></div>
+                            <pre class="json mb-0 mt-1" th:text="${e.outputJson}"></pre>
+                            <small class="text-muted" th:text="${e.durationMs} + ' ms'"></small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="tab-trace">
+                    <table class="table table-sm">
+                        <thead><tr><th>#</th><th>Step</th><th>Name</th><th>Status</th><th>ms</th><th>Output</th></tr></thead>
+                        <tbody>
+                        <tr th:each="s : ${steps}">
+                            <td th:text="${s.seq}"></td>
+                            <td><span class="badge text-bg-secondary" th:text="${s.stepType}"></span></td>
+                            <td class="mono" th:text="${s.name}"></td>
+                            <td th:text="${s.status}"></td>
+                            <td th:text="${s.durationMs}"></td>
+                            <td class="mono" style="max-width:340px;overflow:hidden;text-overflow:ellipsis"
+                                th:text="${s.outputSummary}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="tab-pane fade" id="tab-memory">
+                    <p class="text-muted small">Conversation memory scoped to this case only.</p>
+                    <div class="card mb-2" th:each="m : ${memory}">
+                        <div class="card-body py-2">
+                            <span class="badge text-bg-secondary" th:text="${m.role}"></span>
+                            <span th:text="${m.content}"></span>
+                        </div>
+                    </div>
+                    <p class="text-muted" th:if="${#lists.isEmpty(memory)}">No memory yet.</p>
+                </div>
+
+                <div class="tab-pane fade" id="tab-audit">
+                    <table class="table table-sm">
+                        <thead><tr><th>Time</th><th>Actor</th><th>Event</th><th>Details</th></tr></thead>
+                        <tbody>
+                        <tr th:each="a : ${audit}">
+                            <td th:text="${#temporals.format(a.createdAt, 'MM-dd HH:mm:ss')}"></td>
+                            <td th:text="${a.actor}"></td>
+                            <td><span class="badge text-bg-light border" th:text="${a.eventType}"></span></td>
+                            <td class="mono" th:text="${a.detailsJson}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

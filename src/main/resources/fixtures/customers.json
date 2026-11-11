@@ -1,0 +1,34 @@
+[
+  {
+    "customerId": "CUST-101",
+    "name": "Alex Meyer",
+    "country": "US",
+    "customerSinceYears": 7,
+    "avgMonthlySpend": 2300,
+    "kycStatus": "VERIFIED"
+  },
+  {
+    "customerId": "CUST-102",
+    "name": "Priya Singh",
+    "country": "US",
+    "customerSinceYears": 3,
+    "avgMonthlySpend": 1400,
+    "kycStatus": "VERIFIED"
+  },
+  {
+    "customerId": "CUST-103",
+    "name": "Carol Diaz",
+    "country": "US",
+    "customerSinceYears": 10,
+    "avgMonthlySpend": 3100,
+    "kycStatus": "VERIFIED"
+  },
+  {
+    "customerId": "CUST-104",
+    "name": "Dan Osei",
+    "country": "US",
+    "customerSinceYears": 1,
+    "avgMonthlySpend": 800,
+    "kycStatus": "VERIFIED"
+  }
+]

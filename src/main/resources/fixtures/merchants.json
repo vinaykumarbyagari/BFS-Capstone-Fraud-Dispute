@@ -1,0 +1,34 @@
+[
+  {
+    "name": "SKYLINE ELECTRONICS",
+    "mcc": "5734",
+    "category": "electronics",
+    "riskScore": 0.82,
+    "priorFraudReports": 14,
+    "country": "RO"
+  },
+  {
+    "name": "NORDIC HOME GOODS",
+    "mcc": "5712",
+    "category": "home goods",
+    "riskScore": 0.30,
+    "priorFraudReports": 1,
+    "country": "SE"
+  },
+  {
+    "name": "CITY GROCER",
+    "mcc": "5411",
+    "category": "grocery",
+    "riskScore": 0.05,
+    "priorFraudReports": 0,
+    "country": "US"
+  },
+  {
+    "name": "GLOBAL WIRE TRANSFER",
+    "mcc": "4829",
+    "category": "money transfer",
+    "riskScore": 0.66,
+    "priorFraudReports": 7,
+    "country": "NG"
+  }
+]

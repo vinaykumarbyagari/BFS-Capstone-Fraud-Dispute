@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Policies')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container">
+    <h2>Ingested policy documents</h2>
+    <p class="text-muted">Chunks carry exact citation metadata (policyId · version · section) used for grounded citations.</p>
+
+    <div class="card mb-3" th:each="entry : ${byPolicy}">
+        <div class="card-header">
+            <b class="mono" th:text="${entry.key}">POL-XXX</b>
+            — <span th:text="${entry.value[0].policyTitle}"></span>
+            <span class="badge text-bg-secondary ms-2" th:text="'v' + ${entry.value[0].policyVersion}"></span>
+            <span class="badge text-bg-light border ms-1" th:text="${entry.value.size()} + ' chunks'"></span>
+        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item" th:each="chunk : ${entry.value}">
+                <span class="badge text-bg-light border mono" th:text="${'§' + chunk.section}"></span>
+                <details class="d-inline ms-2">
+                    <summary class="d-inline text-muted">preview</summary>
+                    <pre class="json mt-2" th:text="${chunk.text}"></pre>
+                </details>
+            </li>
+        </ul>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

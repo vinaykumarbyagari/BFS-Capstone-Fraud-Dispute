@@ -1,0 +1,43 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: fraud-dispute-agent
+  datasource:
+    url: ${DB_URL:jdbc:h2:file:./data/fraudagent}
+    driver-class-name: ${DB_DRIVER:org.h2.Driver}
+    username: ${DB_USERNAME:fraud}
+    password: ${DB_PASSWORD:fraud}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+fraud:
+  processor:
+    # auto | rules | springai | langchain4j
+    # auto -> springai when ANTHROPIC_API_KEY is set, otherwise rules
+    mode: ${FRAUD_PROCESSOR_MODE:auto}
+  anthropic:
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: ${ANTHROPIC_MODEL:claude-sonnet-4-5}
+    # gateway/proxy root URL (e.g. https://llmgw-wp.tekstac.com); empty = default api.anthropic.com
+    base-url: ${ANTHROPIC_BASE_URL:}
+  evidence:
+    max-tool-calls: 8
+  retrieval:
+    top-k: 5
+    min-score: 0.10
+  rules:
+    escalate-amount: 10000
+    manual-review-amount: 5000
+    high-amount: 1000
+    fraud-score-escalate: 0.65
+    fraud-score-fraud-likely: 0.45
+    fraud-score-legit-likely: 0.25
+    merchant-risk-high: 0.75
+    merchant-risk-medium: 0.45
+  security:
+    analyst-password: ${ANALYST_PASSWORD:analyst123}
+    reviewer-password: ${REVIEWER_PASSWORD:reviewer123}

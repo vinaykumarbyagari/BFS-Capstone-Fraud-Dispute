@@ -1,0 +1,43 @@
+[
+  {
+    "customerId": "CUST-101",
+    "trustedDevices": [
+      {"deviceId": "dev-ios-101", "firstSeen": "2023-05-11", "trusted": true}
+    ],
+    "recentLogins": [
+      {"at": "2026-10-30T01:58:00Z", "deviceId": "dev-unknown-77", "country": "RO", "success": true, "trusted": false},
+      {"at": "2026-10-30T01:41:00Z", "deviceId": "dev-unknown-77", "country": "RO", "success": false, "trusted": false},
+      {"at": "2026-10-30T01:36:00Z", "deviceId": "dev-unknown-77", "country": "RO", "success": false, "trusted": false},
+      {"at": "2026-10-29T18:12:00Z", "deviceId": "dev-ios-101", "country": "US", "success": true, "trusted": true}
+    ]
+  },
+  {
+    "customerId": "CUST-102",
+    "trustedDevices": [
+      {"deviceId": "dev-and-102", "firstSeen": "2024-02-02", "trusted": true}
+    ],
+    "recentLogins": [
+      {"at": "2026-10-31T19:30:00Z", "deviceId": "dev-web-55", "country": "SE", "success": true, "trusted": false},
+      {"at": "2026-10-30T08:00:00Z", "deviceId": "dev-and-102", "country": "US", "success": true, "trusted": true}
+    ]
+  },
+  {
+    "customerId": "CUST-103",
+    "trustedDevices": [
+      {"deviceId": "dev-ios-103", "firstSeen": "2020-01-10", "trusted": true}
+    ],
+    "recentLogins": [
+      {"at": "2026-11-01T14:50:00Z", "deviceId": "dev-ios-103", "country": "US", "success": true, "trusted": true}
+    ]
+  },
+  {
+    "customerId": "CUST-104",
+    "trustedDevices": [
+      {"deviceId": "dev-win-104", "firstSeen": "2025-06-01", "trusted": true}
+    ],
+    "recentLogins": [
+      {"at": "2026-11-02T08:40:00Z", "deviceId": "dev-win-104", "country": "US", "success": true, "trusted": true},
+      {"at": "2026-11-01T22:10:00Z", "deviceId": "dev-x-9", "country": "US", "success": false, "trusted": false}
+    ]
+  }
+]

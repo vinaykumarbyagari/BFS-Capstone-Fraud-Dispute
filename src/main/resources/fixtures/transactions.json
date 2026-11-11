@@ -1,0 +1,54 @@
+[
+  {
+    "ref": "TXN-5001",
+    "customerId": "CUST-101",
+    "cardLast4": "4412",
+    "merchant": "SKYLINE ELECTRONICS",
+    "amount": 1240.00,
+    "currency": "USD",
+    "channel": "CARD_NOT_PRESENT",
+    "country": "RO",
+    "city": "Bucharest",
+    "timestamp": "2026-10-30T02:14:00Z",
+    "mcc": "5734"
+  },
+  {
+    "ref": "TXN-5002",
+    "customerId": "CUST-102",
+    "cardLast4": "8890",
+    "merchant": "NORDIC HOME GOODS",
+    "amount": 86.40,
+    "currency": "USD",
+    "channel": "CARD_NOT_PRESENT",
+    "country": "SE",
+    "city": "Stockholm",
+    "timestamp": "2026-10-31T19:42:00Z",
+    "mcc": "5712"
+  },
+  {
+    "ref": "TXN-5003",
+    "customerId": "CUST-103",
+    "cardLast4": "2210",
+    "merchant": "CITY GROCER",
+    "amount": 42.10,
+    "currency": "USD",
+    "channel": "CARD_PRESENT",
+    "country": "US",
+    "city": "Austin",
+    "timestamp": "2026-11-01T15:05:00Z",
+    "mcc": "5411"
+  },
+  {
+    "ref": "TXN-5004",
+    "customerId": "CUST-104",
+    "cardLast4": "9034",
+    "merchant": "GLOBAL WIRE TRANSFER",
+    "amount": 12000.00,
+    "currency": "USD",
+    "channel": "WIRE",
+    "country": "NG",
+    "city": "Lagos",
+    "timestamp": "2026-11-02T09:00:00Z",
+    "mcc": "4829"
+  }
+]
