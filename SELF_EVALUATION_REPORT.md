@@ -1,5 +1,8 @@
 # Capstone Self-Evaluation Report
 
+- Author: **Vinay Kumar Byagari**
+- Evaluated date: **2026-11-12**
+
 ## 1. Executive Summary
 - Project: `fraud-dispute-agent` — Intelligent Payment Fraud Investigation and Dispute Resolution Agent
 - Primary framework: Spring AI (`spring-ai-anthropic` 1.0.9, `AnthropicChatModel`)
