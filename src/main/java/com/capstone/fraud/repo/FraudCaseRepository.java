@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface FraudCaseRepository extends JpaRepository<FraudCase, String> {
     Optional<FraudCase> findByCaseNumber(String caseNumber);
+
+    List<FraudCase> findByTransactionRefOrderByCreatedAt(String transactionRef);
     List<FraudCase> findAllByOrderByCreatedAtDesc();
     List<FraudCase> findByStatusOrderByCreatedAtDesc(com.capstone.fraud.domain.CaseStatus status);
     long countByStatus(com.capstone.fraud.domain.CaseStatus status);

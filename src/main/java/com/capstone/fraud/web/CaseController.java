@@ -53,11 +53,18 @@ public class CaseController {
             model.addAttribute("disputeTypes", DisputeType.values());
             return "cases/new";
         }
-        FraudCase c = caseService.intake(form, SecurityUtils.currentUser());
-        if (form.isInvestigateNow()) {
-            caseService.investigate(c.getId(), SecurityUtils.currentUser());
+        try {
+            FraudCase c = caseService.intake(form, SecurityUtils.currentUser());
+            if (form.isInvestigateNow()) {
+                caseService.investigate(c.getId(), SecurityUtils.currentUser());
+            }
+            return "redirect:/cases/" + c.getId();
+        } catch (IllegalStateException e) {
+            binding.rejectValue("transactionRef", "duplicate", e.getMessage());
+            model.addAttribute("channels", Channel.values());
+            model.addAttribute("disputeTypes", DisputeType.values());
+            return "cases/new";
         }
-        return "redirect:/cases/" + c.getId();
     }
 
     @GetMapping("/{id}")

@@ -34,6 +34,12 @@ public class PolicyChunk {
 
     private int chunkIndex;
 
+    /** ACTIVE or RETIRED — retrieval only ever surfaces ACTIVE chunks. */
+    @Column(nullable = false, columnDefinition = "varchar(255) not null default 'ACTIVE'")
+    private String status = "ACTIVE";
+
+    private String effectiveDate;
+
     @Column(nullable = false, length = 8000)
     private String text;
 

@@ -115,6 +115,28 @@ public class RulesAnalyzer {
             reasons.add(priorCount + " prior dispute/fraud case(s) for this customer (+0.10)");
         }
 
+        Map<String, Object> screening = ev.get("sanctions_screening");
+        boolean screeningHit = Boolean.TRUE.equals(screening.get("hit"));
+        if (screeningHit) {
+            score += 0.40;
+            reasons.add("sanctions/PEP screening hit on customer or merchant — "
+                    + "mandatory compliance escalation (+0.40)");
+        }
+
+        Map<String, Object> velocity = ev.get("transaction_velocity");
+        if (Boolean.TRUE.equals(velocity.get("velocityFlag"))) {
+            score += 0.15;
+            reasons.add("velocity flag: " + (long) number(velocity.get("countLast10Min"))
+                    + " transactions within 10 minutes (+0.15)");
+        }
+
+        Map<String, Object> deviation = ev.get("amount_deviation");
+        if (Boolean.TRUE.equals(deviation.get("deviationFlag"))) {
+            score += 0.15;
+            reasons.add(String.format("amount %.0f is %.1fx the customer's median baseline (+0.15)",
+                    number(deviation.get("currentAmount")), number(deviation.get("deviationRatio"))));
+        }
+
         Channel channel = channelOf(c, tx);
         if (channel == Channel.CARD_NOT_PRESENT || channel == Channel.ONLINE_BANKING || channel == Channel.WIRE) {
             score += 0.10;
@@ -133,7 +155,12 @@ public class RulesAnalyzer {
         reasons.add(0, String.format("composite fraud signal score %.2f", score));
 
         // ---- route decision ----
-        if (amount >= rules.getEscalateAmount()) {
+        if (screeningHit) {
+            out.setRoute(CaseRoute.ESCALATE_FRAUD_OPS);
+            out.setPriority(Priority.URGENT);
+            reasons.add("screening hit mandates escalation to compliance/fraud ops — "
+                    + "no autonomous action is taken");
+        } else if (amount >= rules.getEscalateAmount()) {
             out.setRoute(CaseRoute.ESCALATE_FRAUD_OPS);
             out.setPriority(Priority.URGENT);
             reasons.add(String.format("amount %.2f >= escalation threshold %.2f", amount, rules.getEscalateAmount()));

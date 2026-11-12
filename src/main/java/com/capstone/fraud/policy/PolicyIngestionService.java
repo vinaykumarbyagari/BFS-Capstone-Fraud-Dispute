@@ -17,8 +17,10 @@ import java.util.Map;
 /**
  * Ingests policy markdown documents from classpath:policies/ into
  * policy_chunk rows. Chunks are split on "## " section headings so each
- * chunk carries exact citation metadata (policyId, version, section).
- * Ingestion is idempotent: it runs only when the table is empty.
+ * chunk carries exact citation metadata (policyId, version, section,
+ * status, effectiveDate). Ingestion is idempotent per document: only
+ * policyIds not yet present are loaded, so new manifest entries are
+ * picked up on restart without duplicating existing rows.
  */
 @Slf4j
 @Service
@@ -32,16 +34,18 @@ public class PolicyIngestionService {
 
     @PostConstruct
     void ingest() {
-        if (chunkRepo.count() > 0) {
-            log.info("Policy chunks already ingested ({} rows), skipping", chunkRepo.count());
-            return;
-        }
         List<Map<String, Object>> manifest = readManifest();
         int total = 0;
+        int skipped = 0;
         for (Map<String, Object> doc : manifest) {
+            String policyId = String.valueOf(doc.get("policyId"));
+            if (chunkRepo.countByPolicyId(policyId) > 0) {
+                skipped++;
+                continue;
+            }
             total += ingestDocument(doc);
         }
-        log.info("Ingested {} policy chunks from {} documents", total, manifest.size());
+        log.info("Policy ingestion: {} chunks ingested, {} documents already present", total, skipped);
     }
 
     @SuppressWarnings("unchecked")
@@ -59,6 +63,8 @@ public class PolicyIngestionService {
         String version = String.valueOf(doc.get("version"));
         String title = String.valueOf(doc.get("title"));
         String file = String.valueOf(doc.get("file"));
+        String status = String.valueOf(doc.getOrDefault("status", "active")).toUpperCase();
+        String effectiveDate = String.valueOf(doc.getOrDefault("effectiveDate", ""));
 
         String markdown;
         try (InputStream in = new ClassPathResource("policies/" + file).getInputStream()) {
@@ -80,6 +86,8 @@ public class PolicyIngestionService {
             c.setPolicyTitle(title);
             c.setSection(extractSection(text, idx));
             c.setChunkIndex(idx++);
+            c.setStatus(status);
+            c.setEffectiveDate(effectiveDate);
             c.setText(text);
             chunks.add(c);
         }

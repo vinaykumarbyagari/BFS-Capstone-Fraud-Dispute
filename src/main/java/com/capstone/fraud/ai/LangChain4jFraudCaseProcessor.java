@@ -7,7 +7,9 @@ import com.capstone.fraud.repo.RecommendationRepository;
 import com.capstone.fraud.service.CaseMemoryService;
 import com.capstone.fraud.service.InvestigationTracer;
 import com.capstone.fraud.tools.EvidenceToolExecutor;
+import com.capstone.fraud.memory.CaseChatMemoryAdapter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,16 +33,19 @@ import java.util.List;
 public class LangChain4jFraudCaseProcessor extends AbstractAiFraudCaseProcessor {
 
     private final FraudProperties properties;
+    private final CaseChatMemoryAdapter memoryAdapter;
     private AnthropicChatModel model;
 
     public LangChain4jFraudCaseProcessor(EvidenceToolExecutor executor, PolicyRetriever retriever,
                                          InvestigationTracer tracer, RulesAnalyzer rulesAnalyzer,
                                          PromptFactory prompts, ContractValidator contractValidator,
                                          CaseMemoryService memory, RecommendationRepository recommendationRepo,
-                                         ObjectMapper objectMapper, FraudProperties properties) {
+                                         ObjectMapper objectMapper, FraudProperties properties,
+                                         CaseChatMemoryAdapter memoryAdapter) {
         super(executor, retriever, tracer, rulesAnalyzer, prompts, contractValidator,
                 memory, recommendationRepo, objectMapper, properties);
         this.properties = properties;
+        this.memoryAdapter = memoryAdapter;
     }
 
     @PostConstruct
@@ -80,10 +86,19 @@ public class LangChain4jFraudCaseProcessor extends AbstractAiFraudCaseProcessor 
     }
 
     @Override
-    protected String callModel(String systemPrompt, String userPrompt) {
-        ChatResponse response = model.chat(ChatRequest.builder()
-                .messages(List.of(SystemMessage.from(systemPrompt), UserMessage.from(userPrompt)))
-                .build());
+    protected String callModel(String systemPrompt, String userPrompt, String caseId) {
+        // framework chat memory: JPA-backed, memory id = case id
+        List<ChatMessage> history = dev.langchain4j.memory.chat.MessageWindowChatMemory.builder()
+                .id(caseId)
+                .maxMessages(10)
+                .chatMemoryStore(memoryAdapter)
+                .build()
+                .messages();
+        List<ChatMessage> messages = new ArrayList<>(history.size() + 2);
+        messages.add(SystemMessage.from(systemPrompt));
+        messages.addAll(history);
+        messages.add(UserMessage.from(userPrompt));
+        ChatResponse response = model.chat(ChatRequest.builder().messages(messages).build());
         String text = response.aiMessage() == null ? null : response.aiMessage().text();
         if (text == null || text.isBlank()) {
             throw new IllegalStateException("empty model response");

@@ -1,0 +1,16 @@
+[
+  {
+    "entityType": "MERCHANT",
+    "key": "GLOBAL WIRE TRANSFER",
+    "listMatch": "SANCTIONS_WATCHLIST",
+    "score": 0.97,
+    "note": "synthetic watchlist match — jurisdiction under comprehensive sanctions"
+  },
+  {
+    "entityType": "CUSTOMER",
+    "key": "CUST-104",
+    "listMatch": "PEP",
+    "score": 0.81,
+    "note": "synthetic politically-exposed-person screening hit"
+  }
+]

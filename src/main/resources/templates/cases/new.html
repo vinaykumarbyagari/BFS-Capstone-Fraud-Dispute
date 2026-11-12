@@ -14,46 +14,47 @@
             <form th:action="@{/cases/new}" th:object="${form}" method="post">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label">Customer ID *</label>
+                        <label class="form-label" for="customerId">Customer ID *</label>
                         <input class="form-control" th:field="*{customerId}" placeholder="CUST-101">
                         <div class="text-danger small" th:errors="*{customerId}"></div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Card last 4 *</label>
+                        <label class="form-label" for="cardLast4">Card last 4 *</label>
                         <input class="form-control" th:field="*{cardLast4}" placeholder="4412" maxlength="4">
                         <div class="text-danger small" th:errors="*{cardLast4}"></div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Transaction ref</label>
+                        <label class="form-label" for="transactionRef">Transaction ref</label>
                         <input class="form-control" th:field="*{transactionRef}" placeholder="TXN-5001">
+                        <div class="text-danger small" th:errors="*{transactionRef}"></div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Merchant</label>
+                        <label class="form-label" for="merchantName">Merchant</label>
                         <input class="form-control" th:field="*{merchantName}" placeholder="SKYLINE ELECTRONICS">
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Amount *</label>
+                        <label class="form-label" for="amount">Amount *</label>
                         <input class="form-control" type="number" step="0.01" th:field="*{amount}">
                         <div class="text-danger small" th:errors="*{amount}"></div>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">Currency *</label>
+                        <label class="form-label" for="currency">Currency *</label>
                         <input class="form-control" th:field="*{currency}" maxlength="3">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Channel *</label>
+                        <label class="form-label" for="channel">Channel *</label>
                         <select class="form-select" th:field="*{channel}">
                             <option th:each="ch : ${channels}" th:value="${ch}" th:text="${ch}"></option>
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Dispute type *</label>
+                        <label class="form-label" for="disputeType">Dispute type *</label>
                         <select class="form-select" th:field="*{disputeType}">
                             <option th:each="d : ${disputeTypes}" th:value="${d}" th:text="${d}"></option>
                         </select>
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Customer statement</label>
+                        <label class="form-label" for="description">Customer statement</label>
                         <textarea class="form-control" rows="3" th:field="*{description}"
                                   placeholder="Customer reports they never made this purchase..."></textarea>
                     </div>

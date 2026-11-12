@@ -31,8 +31,8 @@ the reviewer disposition is the decision of record.
    RulesFraudCaseProcessor  SpringAiFraudCaseProcessor  LangChain4jFraudCaseProcessor
               └───────── shared pipeline (AbstractFraudCaseProcessor) ──────────┘
                                      │
-        plan ─► EvidenceToolExecutor ─► PolicyRetriever (TF-IDF vectors)
-              (5 read-only tools,        (abstains when context
+        plan ─► EvidenceToolExecutor ─► PolicyRetriever (EmbeddingStore)
+              (8 read-only tools,        (abstains when context
                traced + budgeted)         is insufficient)
                                      │
                   RulesAnalyzer / model call ─► ContractValidator
@@ -46,24 +46,42 @@ the reviewer disposition is the decision of record.
 
 Key properties:
 
-- **Bounded tools** — 5 read-only tools (`transaction_lookup`,
+- **Bounded tools** — 8 read-only tools (`transaction_lookup`,
   `customer_profile`, `device_login_history`, `merchant_risk`,
-  `prior_case_history`) over deterministic synthetic fixtures. In AI modes
+  `prior_case_history`, `transaction_velocity`, `amount_deviation`,
+  `sanctions_screening`) over deterministic synthetic fixtures. In AI modes
   the model chooses calls from the catalog; unknown/over-budget calls are
   recorded as `REJECTED`, never executed (`fraud.evidence.max-tool-calls`).
+- **Intake deduplication** — the same `transactionRef` cannot be intaken
+  twice; duplicates return HTTP 409 (API) or a form error (UI). Case
+  numbers are seeded from the persisted maximum, so restarts cannot
+  collide with existing rows.
 - **Observable trace** — every plan, tool call, retrieval, model call,
   validation and decision is persisted as an `InvestigationStep` (visible
   in the case detail "Execution trace" tab).
 - **Policy RAG** — policy markdown is chunked on `## ` headings with exact
-  citation metadata, embedded as TF-IDF vectors (deterministic, offline)
-  and retrieved by cosine similarity. Below `fraud.retrieval.min-score`
+  citation metadata (policyId, version, section, status, effectiveDate),
+  embedded through a LangChain4j `EmbeddingModel` into an
+  `InMemoryEmbeddingStore` (deterministic TF-IDF vectors, offline) and
+  retrieved by cosine similarity. Only `ACTIVE` policies are indexed —
+  retired documents are excluded. Below `fraud.retrieval.min-score`
   the run **abstains** and routes to `MANUAL_REVIEW`.
 - **Structured output contract** — model output must validate against
   `schema/recommendation.schema.json` (one correction retry on failure,
   then rules fallback). Citations not present in the retrieved set are
   dropped; a grounded route requires ≥1 real citation.
-- **Case memory** — `CaseMessage` rows are strictly scoped by `caseId`;
-  recent turns are injected into AI prompts.
+- **Case memory** — `CaseMessage` rows are strictly scoped by `caseId` and
+  surfaced through each framework's native memory: Spring AI
+  `MessageWindowChatMemory` over a JPA `ChatMemoryRepository`, and
+  LangChain4j `MessageWindowChatMemory` over a JPA `ChatMemoryStore`
+  (`memory/CaseChatMemoryAdapter`). Window is bounded at 10 turns.
+- **Prompt hardening** — case fields, tool evidence and policy passages
+  are wrapped in `<case_data>` / `<tool_evidence>` / `<policy_passages>`
+  delimiters and the system prompt explicitly treats their content as
+  data, never instructions.
+- **Observability** — Spring Boot Actuator exposes
+  `/actuator/health` (+ `info`, `metrics`); JaCoCo coverage report is
+  generated under `target/site/jacoco/` during `mvn test`.
 - **Append-only audit** — `AuditEvent` blocks update/delete at the entity
   level; all lifecycle events are recorded with actor and details.
 
@@ -128,10 +146,15 @@ curl -u analyst:analyst123 -X POST localhost:8090/api/cases \
 mvn test
 ```
 
-- **Unit** — rules analyzer, JSON-schema contract, JSON extractor, TF-IDF
-  retriever (incl. abstention), append-only audit enforcement.
+- **Unit** — rules analyzer (incl. velocity/deviation/screening signals),
+  JSON-schema contract, JSON extractor, embedding retriever (incl.
+  abstention and retired-policy exclusion), new evidence tools,
+  append-only audit enforcement.
 - **Contract** — all three `FraudCaseProcessor` modes registered; AI modes
   unavailable without credentials; resolver falls back to rules.
+- **Resilience** — model failure degrades to `RULES_FALLBACK`; unknown and
+  over-budget tool calls are `REJECTED`; duplicate intake is rejected;
+  memory is isolated per case and bounded.
 - **Integration** — full intake → investigate → review flow via MockMvc
   with audit-trail assertions.
 - **Evaluation** — golden scenarios asserting expected routes

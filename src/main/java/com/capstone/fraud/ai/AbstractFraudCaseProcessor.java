@@ -115,7 +115,13 @@ public abstract class AbstractFraudCaseProcessor implements FraudCaseProcessor {
                 new ToolCallSpec("customer_profile", Map.of("customerId", safe(c.getCustomerId()))),
                 new ToolCallSpec("device_login_history", Map.of("customerId", safe(c.getCustomerId()))),
                 new ToolCallSpec("merchant_risk", Map.of("merchantName", safe(c.getMerchantName()))),
-                new ToolCallSpec("prior_case_history", Map.of("customerId", safe(c.getCustomerId()))));
+                new ToolCallSpec("prior_case_history", Map.of("customerId", safe(c.getCustomerId()))),
+                new ToolCallSpec("transaction_velocity", Map.of(
+                        "customerId", safe(c.getCustomerId()), "transactionRef", safe(c.getTransactionRef()))),
+                new ToolCallSpec("amount_deviation", Map.of(
+                        "customerId", safe(c.getCustomerId()), "transactionRef", safe(c.getTransactionRef()))),
+                new ToolCallSpec("sanctions_screening", Map.of(
+                        "customerId", safe(c.getCustomerId()), "merchantName", safe(c.getMerchantName()))));
         tracer.trace(runId, c.getId(), StepType.PLAN, "tool-plan",
                 "deterministic", plan.size() + " tool calls planned");
         return plan;

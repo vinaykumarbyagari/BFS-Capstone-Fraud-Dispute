@@ -1,0 +1,37 @@
+[
+  {
+    "customerId": "CUST-101",
+    "recentTransactions": [
+      {"ref": "TXN-5101", "timestamp": "2026-10-30T02:04:00Z", "amount": 61.20, "merchant": "QUICKPAY WALLET", "channel": "CARD_NOT_PRESENT"},
+      {"ref": "TXN-5102", "timestamp": "2026-10-30T02:06:30Z", "amount": 24.99, "merchant": "QUICKPAY WALLET", "channel": "CARD_NOT_PRESENT"},
+      {"ref": "TXN-5103", "timestamp": "2026-10-30T02:08:15Z", "amount": 132.40, "merchant": "SKYLINE ELECTRONICS", "channel": "CARD_NOT_PRESENT"},
+      {"ref": "TXN-5104", "timestamp": "2026-10-30T02:10:02Z", "amount": 78.55, "merchant": "SKYLINE ELECTRONICS", "channel": "CARD_NOT_PRESENT"},
+      {"ref": "TXN-5105", "timestamp": "2026-10-30T02:11:47Z", "amount": 15.00, "merchant": "GAME CREDITS EU", "channel": "CARD_NOT_PRESENT"},
+      {"ref": "TXN-5106", "timestamp": "2026-10-30T02:13:31Z", "amount": 210.75, "merchant": "GAME CREDITS EU", "channel": "CARD_NOT_PRESENT"},
+      {"ref": "TXN-4988", "timestamp": "2026-10-29T20:44:00Z", "amount": 52.30, "merchant": "CITY PHARMACY", "channel": "CARD_PRESENT"},
+      {"ref": "TXN-4970", "timestamp": "2026-10-28T12:05:00Z", "amount": 88.10, "merchant": "MART FUEL", "channel": "CARD_PRESENT"}
+    ]
+  },
+  {
+    "customerId": "CUST-102",
+    "recentTransactions": [
+      {"ref": "TXN-5090", "timestamp": "2026-10-31T12:15:00Z", "amount": 40.00, "merchant": "NORDIC HOME GOODS", "channel": "CARD_NOT_PRESENT"},
+      {"ref": "TXN-4960", "timestamp": "2026-10-30T09:20:00Z", "amount": 65.75, "merchant": "METRO BOOKS", "channel": "CARD_PRESENT"}
+    ]
+  },
+  {
+    "customerId": "CUST-103",
+    "recentTransactions": [
+      {"ref": "TXN-5085", "timestamp": "2026-11-01T08:30:00Z", "amount": 21.40, "merchant": "CITY GROCER", "channel": "CARD_PRESENT"},
+      {"ref": "TXN-5077", "timestamp": "2026-10-31T18:02:00Z", "amount": 96.00, "merchant": "CITY GROCER", "channel": "CARD_PRESENT"}
+    ]
+  },
+  {
+    "customerId": "CUST-104",
+    "recentTransactions": [
+      {"ref": "TXN-5201", "timestamp": "2026-11-02T08:50:00Z", "amount": 500.00, "merchant": "GLOBAL WIRE TRANSFER", "channel": "WIRE"},
+      {"ref": "TXN-5202", "timestamp": "2026-11-02T08:54:00Z", "amount": 800.00, "merchant": "GLOBAL WIRE TRANSFER", "channel": "WIRE"},
+      {"ref": "TXN-5203", "timestamp": "2026-11-02T08:57:00Z", "amount": 1200.00, "merchant": "GLOBAL WIRE TRANSFER", "channel": "WIRE"}
+    ]
+  }
+]

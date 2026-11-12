@@ -35,6 +35,10 @@ public class FixtureDataService {
     private List<Map<String, Object>> merchants = List.of();
     @Getter
     private List<Map<String, Object>> priorCases = List.of();
+    @Getter
+    private List<Map<String, Object>> activity = List.of();
+    @Getter
+    private List<Map<String, Object>> screening = List.of();
 
     public FixtureDataService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -47,6 +51,8 @@ public class FixtureDataService {
         deviceProfiles = read("fixtures/devices.json");
         merchants = read("fixtures/merchants.json");
         priorCases = read("fixtures/prior_cases.json");
+        activity = read("fixtures/activity.json");
+        screening = read("fixtures/screening.json");
         log.info("Loaded synthetic fixtures: {} transactions, {} customers, {} merchants",
                 transactions.size(), customers.size(), merchants.size());
     }
@@ -81,6 +87,22 @@ public class FixtureDataService {
     public List<Map<String, Object>> priorCasesFor(String customerId) {
         return priorCases.stream()
                 .filter(p -> customerId != null && customerId.equals(p.get("customerId")))
+                .toList();
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<Map<String, Object>> recentActivityFor(String customerId) {
+        return activity.stream()
+                .filter(a -> customerId != null && customerId.equals(a.get("customerId")))
+                .findFirst()
+                .map(a -> (List<Map<String, Object>>) a.getOrDefault("recentTransactions", List.of()))
+                .orElse(List.of());
+    }
+
+    public List<Map<String, Object>> screeningHitsFor(String customerId, String merchantName) {
+        return screening.stream()
+                .filter(s -> (customerId != null && customerId.equals(s.get("key")))
+                        || (merchantName != null && merchantName.equalsIgnoreCase(String.valueOf(s.get("key")))))
                 .toList();
     }
 

@@ -33,14 +33,14 @@
         <div class="card-body">
             <form th:action="@{/cases/{id}/review(id=${c.id})}" th:object="${form}" method="post">
                 <div class="mb-3">
-                    <label class="form-label">Disposition *</label>
+                    <label class="form-label" for="disposition">Disposition *</label>
                     <select class="form-select" th:field="*{disposition}">
                         <option th:each="d : ${dispositions}" th:value="${d}" th:text="${d}"></option>
                     </select>
                     <div class="text-danger small" th:errors="*{disposition}"></div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Rationale * (min 10 characters, references evidence)</label>
+                    <label class="form-label" for="rationale">Rationale * (min 10 characters, references evidence)</label>
                     <textarea class="form-control" rows="4" th:field="*{rationale}"
                               placeholder="Based on the device evidence and merchant risk score…"></textarea>
                     <div class="text-danger small" th:errors="*{rationale}"></div>

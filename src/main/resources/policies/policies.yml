@@ -2,16 +2,30 @@ policies:
   - policyId: POL-DISPUTE-001
     version: "1.4"
     title: Dispute Intake and Evidence Standards
+    status: active
+    effectiveDate: "2026-01-15"
     file: POL-DISPUTE-001.md
   - policyId: POL-FRAUD-002
     version: "2.1"
     title: Unauthorized Transaction Indicators
+    status: active
+    effectiveDate: "2026-03-01"
     file: POL-FRAUD-002.md
   - policyId: POL-ROUTING-003
     version: "1.0"
     title: Case Routing and Escalation Thresholds
+    status: active
+    effectiveDate: "2026-02-10"
     file: POL-ROUTING-003.md
   - policyId: POL-REVIEW-004
     version: "1.2"
     title: Human Review and Disposition Requirements
+    status: active
+    effectiveDate: "2026-04-01"
     file: POL-REVIEW-004.md
+  - policyId: POL-LEGACY-099
+    version: "0.9"
+    title: Legacy Fraud Handling Procedures
+    status: retired
+    effectiveDate: "2023-01-01"
+    file: POL-LEGACY-099.md

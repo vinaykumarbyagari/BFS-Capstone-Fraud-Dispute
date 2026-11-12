@@ -33,8 +33,12 @@ public abstract class AbstractAiFraudCaseProcessor extends AbstractFraudCaseProc
                 memory, recommendationRepo, objectMapper, properties);
     }
 
-    /** Framework-specific model invocation; implementations must not swallow errors. */
-    protected abstract String callModel(String systemPrompt, String userPrompt);
+    /**
+     * Framework-specific model invocation; implementations must not swallow errors.
+     * The caseId is the conversation/memory id — each implementation loads the
+     * windowed history for that case through its framework's native chat memory.
+     */
+    protected abstract String callModel(String systemPrompt, String userPrompt, String caseId);
 
     @Override
     protected List<ToolCallSpec> planToolCalls(FraudCase c, String runId) {
@@ -43,7 +47,7 @@ public abstract class AbstractAiFraudCaseProcessor extends AbstractFraudCaseProc
         }
         try {
             String raw = tracer.timed(runId, c.getId(), StepType.MODEL_CALL, "tool-plan",
-                    "plan request", () -> callModel(prompts.planSystem(), prompts.planUser(c)));
+                    "plan request", () -> callModel(prompts.planSystem(), prompts.planUser(c), c.getId()));
             List<ToolCallSpec> plan = parsePlan(raw);
             if (plan.isEmpty()) {
                 throw new IllegalStateException("planner returned no tool calls");
@@ -90,11 +94,12 @@ public abstract class AbstractAiFraudCaseProcessor extends AbstractFraudCaseProc
     protected AnalysisResult analyze(FraudCase c, List<EvidenceRecord> evidence,
                                      RetrievalResult retrieval, String runId) {
         String system = prompts.analyzeSystem();
-        String user = prompts.analyzeUser(c, evidence, retrieval.getPassages(),
-                memory.recent(c.getId(), 10));
+        // Case history travels as framework chat memory keyed by caseId —
+        // it is not duplicated inside the user prompt.
+        String user = prompts.analyzeUser(c, evidence, retrieval.getPassages(), List.of());
 
         String raw = tracer.timed(runId, c.getId(), StepType.MODEL_CALL, "recommendation",
-                "analyze request", () -> callModel(system, user));
+                "analyze request", () -> callModel(system, user, c.getId()));
         String json = JsonExtractor.extractObject(raw)
                 .orElseThrow(() -> new IllegalStateException("model returned no JSON object"));
 
@@ -106,7 +111,7 @@ public abstract class AbstractAiFraudCaseProcessor extends AbstractFraudCaseProc
             String retryUser = user + "\n\nPrevious output failed schema validation: "
                     + String.join("; ", errors) + "\nReturn a corrected JSON object only.";
             raw = tracer.timed(runId, c.getId(), StepType.MODEL_CALL, "recommendation-retry",
-                    "analyze request (retry)", () -> callModel(system, retryUser));
+                    "analyze request (retry)", () -> callModel(system, retryUser, c.getId()));
             json = JsonExtractor.extractObject(raw)
                     .orElseThrow(() -> new IllegalStateException("retry returned no JSON object"));
             errors = contractValidator.validate(json);

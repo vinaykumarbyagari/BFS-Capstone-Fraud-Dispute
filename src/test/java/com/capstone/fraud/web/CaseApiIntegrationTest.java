@@ -32,19 +32,21 @@ class CaseApiIntegrationTest {
     @Autowired
     AuditEventRepository auditRepo;
 
-    private static final String INTAKE = """
-            {"customerId":"CUST-101","cardLast4":"4412","transactionRef":"TXN-5001",
-             "merchantName":"SKYLINE ELECTRONICS","amount":1240.00,"currency":"USD",
-             "channel":"CARD_NOT_PRESENT","disputeType":"UNAUTHORIZED_TRANSACTION",
-             "description":"customer denies this purchase","investigateNow":true}
-            """;
+    private static String intake(String txnRef) {
+        return """
+                {"customerId":"CUST-101","cardLast4":"4412","transactionRef":"%s",
+                 "merchantName":"SKYLINE ELECTRONICS","amount":1240.00,"currency":"USD",
+                 "channel":"CARD_NOT_PRESENT","disputeType":"UNAUTHORIZED_TRANSACTION",
+                 "description":"customer denies this purchase","investigateNow":true}
+                """.formatted(txnRef);
+    }
 
     @Test
     @WithMockUser(username = "analyst", roles = {"ANALYST"})
     void fullFlowIntakeInvestigateReview() throws Exception {
         // intake + investigate in one call
         MvcResult created = mvc.perform(post("/api/cases")
-                        .contentType(MediaType.APPLICATION_JSON).content(INTAKE))
+                        .contentType(MediaType.APPLICATION_JSON).content(intake("TXN-API-1")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.caseNumber").exists())
                 .andExpect(jsonPath("$.recommendation.route").value("ESCALATE_FRAUD_OPS"))
@@ -55,7 +57,7 @@ class CaseApiIntegrationTest {
         // trace is observable
         mvc.perform(get("/api/cases/{id}/trace", caseId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.evidence.length()").value(5))
+                .andExpect(jsonPath("$.evidence.length()").value(8))
                 .andExpect(jsonPath("$.steps").isArray());
 
         // human review records disposition
@@ -85,7 +87,7 @@ class CaseApiIntegrationTest {
     @WithMockUser(username = "analyst", roles = {"ANALYST"})
     void reviewRequiresRationale() throws Exception {
         MvcResult created = mvc.perform(post("/api/cases")
-                        .contentType(MediaType.APPLICATION_JSON).content(INTAKE))
+                        .contentType(MediaType.APPLICATION_JSON).content(intake("TXN-API-2")))
                 .andExpect(status().isCreated()).andReturn();
         String caseId = mapper.readTree(created.getResponse().getContentAsString())
                 .get("id").asText();

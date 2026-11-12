@@ -41,8 +41,26 @@ public class CaseService {
         this.memory = memory;
     }
 
+    /** Seed the case counter from persisted rows so restarts cannot collide. */
+    @jakarta.annotation.PostConstruct
+    void seedCaseCounter() {
+        long max = caseRepo.findAll().stream()
+                .map(FraudCase::getCaseNumber)
+                .filter(n -> n != null && n.matches("FC-\\d+"))
+                .mapToLong(n -> Long.parseLong(n.substring(3)))
+                .max().orElse(1000);
+        caseCounter.set(max);
+    }
+
     @Transactional
     public FraudCase intake(CaseIntakeRequest req, String actor) {
+        if (req.getTransactionRef() != null && !req.getTransactionRef().isBlank()) {
+            caseRepo.findByTransactionRefOrderByCreatedAt(req.getTransactionRef()).stream()
+                    .findFirst().ifPresent(existing -> {
+                        throw new IllegalStateException("Case " + existing.getCaseNumber()
+                                + " already exists for transaction " + req.getTransactionRef());
+                    });
+        }
         FraudCase c = new FraudCase();
         c.setCaseNumber("FC-" + caseCounter.incrementAndGet());
         c.setCustomerId(req.getCustomerId());

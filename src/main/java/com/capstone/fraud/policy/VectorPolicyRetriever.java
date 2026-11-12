@@ -3,17 +3,25 @@ package com.capstone.fraud.policy;
 import com.capstone.fraud.config.FraudProperties;
 import com.capstone.fraud.domain.PolicyChunk;
 import com.capstone.fraud.repo.PolicyChunkRepository;
+import dev.langchain4j.data.document.Metadata;
+import dev.langchain4j.data.embedding.Embedding;
+import dev.langchain4j.data.segment.TextSegment;
+import dev.langchain4j.store.embedding.EmbeddingMatch;
+import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
+import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
 /**
- * Deterministic in-memory vector retriever. Chunks and queries are
- * embedded as TF-IDF vectors (term-frequency × inverse-document-frequency)
- * and ranked by cosine similarity — no external embedding service needed,
- * which keeps policy retrieval reproducible offline and identical in
- * tests. Retrieval below the configured minimum score is reported as
+ * Policy retriever backed by a LangChain4j {@link InMemoryEmbeddingStore}.
+ * Chunks and queries are embedded with {@link PolicyEmbeddingModel} —
+ * deterministic dense TF-IDF vectors over the corpus vocabulary — and
+ * ranked by the store's cosine-similarity search, so retrieval is
+ * reproducible offline and identical in tests. Only ACTIVE policy
+ * chunks are indexed; RETIRED chunks are excluded at index time.
+ * Retrieval below the configured minimum score is reported as
  * insufficient so callers can abstain.
  *
  * The index is built lazily on first use so it cannot race policy
@@ -32,9 +40,9 @@ public class VectorPolicyRetriever implements PolicyRetriever {
     private final double minScore;
 
     private volatile boolean indexed;
-    private List<PolicyChunk> chunks = List.of();
-    private List<Map<String, Double>> vectors = List.of();
-    private Map<String, Double> idf = Map.of();
+    private Map<String, PolicyChunk> chunksById = Map.of();
+    private PolicyEmbeddingModel embeddingModel;
+    private InMemoryEmbeddingStore<TextSegment> embeddingStore;
 
     public VectorPolicyRetriever(PolicyChunkRepository chunkRepo, FraudProperties properties) {
         this.chunkRepo = chunkRepo;
@@ -44,45 +52,62 @@ public class VectorPolicyRetriever implements PolicyRetriever {
     @Override
     public RetrievalResult retrieve(String query, int topK) {
         ensureIndexed();
-        if (chunks.isEmpty()) {
+        if (chunksById.isEmpty() || embeddingModel.knownTermCount(query) == 0) {
             return new RetrievalResult(List.of(), false, 0.0);
         }
-        Map<String, Double> qv = tfIdf(tokenize(query), idf);
+        Embedding queryEmbedding = embeddingModel.embed(query).content();
+        List<EmbeddingMatch<TextSegment>> matches = embeddingStore.search(
+                EmbeddingSearchRequest.builder()
+                        .queryEmbedding(queryEmbedding)
+                        .maxResults(topK)
+                        .minScore(0.0)
+                        .build()).matches();
+
         List<RetrievedPassage> scored = new ArrayList<>();
-        for (int i = 0; i < chunks.size(); i++) {
-            double score = cosine(qv, vectors.get(i));
-            if (score > 0) {
-                scored.add(new RetrievedPassage(chunks.get(i), score));
+        for (EmbeddingMatch<TextSegment> m : matches) {
+            String chunkId = m.embedded().metadata().getString("chunkKey");
+            PolicyChunk chunk = chunksById.get(chunkId);
+            if (chunk != null && m.score() > 0) {
+                scored.add(new RetrievedPassage(chunk, m.score()));
             }
         }
         scored.sort(Comparator.comparingDouble(RetrievedPassage::getScore).reversed());
-        List<RetrievedPassage> top = scored.stream().limit(topK).toList();
-        double max = top.isEmpty() ? 0.0 : top.get(0).getScore();
-        return new RetrievalResult(top, max >= minScore, max);
+        double max = scored.isEmpty() ? 0.0 : scored.get(0).getScore();
+        return new RetrievalResult(scored, max >= minScore, max);
     }
 
     /** Visible for tests. */
     public synchronized void index() {
-        chunks = chunkRepo.findAll();
+        List<PolicyChunk> active = chunkRepo.findAll().stream()
+                .filter(this::isActive)
+                .toList();
+        Map<String, PolicyChunk> byId = new HashMap<>();
+        Map<String, Integer> vocabIndex = new HashMap<>();
         Map<String, Integer> df = new HashMap<>();
-        List<List<String>> tokenized = new ArrayList<>();
-        for (PolicyChunk c : chunks) {
+        for (PolicyChunk c : active) {
+            byId.put(chunkKey(c), c);
             List<String> tokens = tokenize(c.getText() + " " + c.getSection() + " " + c.getPolicyTitle());
-            tokenized.add(tokens);
-            new HashSet<>(tokens).forEach(t -> df.merge(t, 1, Integer::sum));
+            new HashSet<>(tokens).forEach(t -> {
+                df.merge(t, 1, Integer::sum);
+                vocabIndex.putIfAbsent(t, vocabIndex.size());
+            });
         }
-        int n = Math.max(1, chunks.size());
+        int n = Math.max(1, active.size());
         Map<String, Double> idfMap = new HashMap<>();
         df.forEach((term, count) -> idfMap.put(term, Math.log(1.0 + (double) n / count)));
-        this.idf = idfMap;
 
-        List<Map<String, Double>> vecs = new ArrayList<>();
-        for (List<String> tokens : tokenized) {
-            vecs.add(tfIdf(tokens, idfMap));
+        this.embeddingModel = new PolicyEmbeddingModel(vocabIndex, idfMap);
+        this.embeddingStore = new InMemoryEmbeddingStore<>();
+        for (PolicyChunk c : active) {
+            TextSegment segment = TextSegment.from(
+                    c.getText() + " " + c.getSection() + " " + c.getPolicyTitle(),
+                    new Metadata().put("chunkKey", chunkKey(c)));
+            embeddingStore.add(embeddingModel.embed(segment).content(), segment);
         }
-        this.vectors = vecs;
+        this.chunksById = byId;
         this.indexed = true;
-        log.info("Policy vector index built: {} chunks, {} terms", chunks.size(), idfMap.size());
+        log.info("Policy embedding store built: {} active chunks, {} terms",
+                active.size(), vocabIndex.size());
     }
 
     private void ensureIndexed() {
@@ -93,27 +118,13 @@ public class VectorPolicyRetriever implements PolicyRetriever {
         }
     }
 
-    private Map<String, Double> tfIdf(List<String> tokens, Map<String, Double> idfMap) {
-        Map<String, Double> vec = new HashMap<>();
-        Map<String, Integer> tf = new HashMap<>();
-        tokens.forEach(t -> tf.merge(t, 1, Integer::sum));
-        double maxTf = tf.values().stream().mapToInt(i -> i).max().orElse(1);
-        tf.forEach((term, count) -> {
-            double idfVal = idfMap.getOrDefault(term, Math.log(1.0 + chunks.size() / 1.0));
-            vec.put(term, (0.5 + 0.5 * count / maxTf) * idfVal);
-        });
-        return vec;
+    private String chunkKey(PolicyChunk c) {
+        return c.getId() != null ? c.getId()
+                : c.getPolicyId() + "#" + c.getChunkIndex() + "#" + Objects.hashCode(c.getSection());
     }
 
-    private static double cosine(Map<String, Double> a, Map<String, Double> b) {
-        double dot = 0, na = 0, nb = 0;
-        for (var e : a.entrySet()) {
-            na += e.getValue() * e.getValue();
-            Double bv = b.get(e.getKey());
-            if (bv != null) dot += e.getValue() * bv;
-        }
-        for (double v : b.values()) nb += v * v;
-        return (na == 0 || nb == 0) ? 0 : dot / (Math.sqrt(na) * Math.sqrt(nb));
+    private boolean isActive(PolicyChunk c) {
+        return c.getStatus() == null || "ACTIVE".equalsIgnoreCase(c.getStatus());
     }
 
     static List<String> tokenize(String text) {

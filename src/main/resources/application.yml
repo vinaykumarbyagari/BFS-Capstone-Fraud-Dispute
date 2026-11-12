@@ -14,6 +14,15 @@ spring:
       ddl-auto: update
     open-in-view: false
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
 fraud:
   processor:
     # auto | rules | springai | langchain4j

@@ -39,6 +39,19 @@
     "mcc": "5411"
   },
   {
+    "ref": "TXN-API-1",
+    "customerId": "CUST-101",
+    "cardLast4": "4412",
+    "merchant": "SKYLINE ELECTRONICS",
+    "amount": 1240.00,
+    "currency": "USD",
+    "channel": "CARD_NOT_PRESENT",
+    "country": "RO",
+    "city": "Bucharest",
+    "timestamp": "2026-10-30T02:14:00Z",
+    "mcc": "5734"
+  },
+  {
     "ref": "TXN-5004",
     "customerId": "CUST-104",
     "cardLast4": "9034",
